@@ -1,8 +1,7 @@
 import React from 'react';
 import {BottomTabNavigationOptions} from '@react-navigation/bottom-tabs';
-import {LayoutChangeEvent, Pressable, StyleSheet} from 'react-native';
+import {LayoutChangeEvent, Pressable, StyleSheet, Animated} from 'react-native';
 import {useEffect, useRef} from 'react';
-import Animated, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
 
 type TabBarComponentProps = {
   active?: boolean;
@@ -10,49 +9,52 @@ type TabBarComponentProps = {
   onLayout: (e: LayoutChangeEvent) => void;
   onPress: () => void;
 };
+
 export const TabBarComponent = ({
   active,
   options,
   onLayout,
   onPress,
 }: TabBarComponentProps) => {
-  // handle lottie animation -----------------------------------------
-  const ref = useRef(null);
+  const scale = useRef(new Animated.Value(active ? 1 : 0)).current;
+  const opacity = useRef(new Animated.Value(active ? 1 : 0.5)).current;
 
   useEffect(() => {
-    if (active && ref?.current) {
-      // @ts-ignore
-      ref.current.play();
-    }
-  }, [active]);
+    Animated.timing(scale, {
+      toValue: active ? 1 : 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start();
 
-  // animations ------------------------------------------------------
-
-  const animatedComponentCircleStyles = useAnimatedStyle(() => {
-    return {
-      transform: [
-        {
-          scale: withTiming(active ? 1 : 0, {duration: 250}),
-        },
-      ],
-    };
-  });
-
-  const animatedIconContainerStyles = useAnimatedStyle(() => {
-    return {
-      opacity: withTiming(active ? 1 : 0.5, {duration: 1250}),
-    };
-  });
+    Animated.timing(opacity, {
+      toValue: active ? 1 : 0.5,
+      duration: 1250,
+      useNativeDriver: true,
+    }).start();
+  }, [active, opacity, scale]);
 
   return (
     <Pressable onPress={onPress} onLayout={onLayout} style={styles.component}>
       <Animated.View
-        style={[styles.componentCircle, animatedComponentCircleStyles]}
+        style={[
+          styles.componentCircle,
+          {
+            transform: [
+              {
+                scale,
+              },
+            ],
+          },
+        ]}
       />
       <Animated.View
-        style={[styles.iconContainer, animatedIconContainerStyles]}>
-        {/* @ts-ignore */}
-        {options.tabBarIcon ? options.tabBarIcon({ref}) : <Text>?</Text>}
+        style={[
+          styles.iconContainer,
+          {
+            opacity,
+          },
+        ]}>
+        {options.tabBarIcon({})}
       </Animated.View>
     </Pressable>
   );
@@ -63,6 +65,7 @@ const styles = StyleSheet.create({
     height: 60,
     width: 60,
     marginTop: -5,
+    marginLeft: -25,
   },
   componentCircle: {
     flex: 1,
